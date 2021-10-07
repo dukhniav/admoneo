@@ -1,0 +1,4 @@
+*.db
+/dist
+/analyzer_old2
+/__pycache__
