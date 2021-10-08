@@ -5,3 +5,4 @@ apprise.yml
 /dist
 /analyzer_old2
 __pycache__
+/logs/*s
