@@ -1,6 +1,7 @@
 *.db
-/data/user.cfg
-/data/coins.txt
+user.cfg
+coins.txt
+apprise.yml
 /dist
 /analyzer_old2
 __pycache__
