@@ -1,4 +1,6 @@
 *.db
+/data/user.cfg
+/data/coins.txt
 /dist
 /analyzer_old2
-/__pycache__
+__pycache__

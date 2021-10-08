@@ -1,13 +1,16 @@
 #!python3
 
-FILE_PATH = './coins.txt'
+from pycoingecko import CoinGeckoAPI as cg
+from pycoingecko.api import CoinGeckoAPI
+
+from .conf.config import Config
 
 
 class Loader:
     def __init__(self):
-        print("Loader started")
+        self.config = Config()
 
-    def get_coin_list():
-
-        coin_list = open(FILE_PATH, 'r').read()
-        return coin_list
+    def get_coins(self):
+        cg = CoinGeckoAPI()
+        coins = cg.get_exchanges_tickers_by_id(self.config.EXCHANGE)
+        return coins

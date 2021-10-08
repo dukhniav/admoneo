@@ -1,5 +1,3 @@
-# #!python3
-
 #!python3
 from analyzer.loader import Loader
 from analyzer.processor import Processor

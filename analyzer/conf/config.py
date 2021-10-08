@@ -2,7 +2,7 @@
 import configparser
 import os
 
-CFG_FL_NAME = "../config/user.cfg"
+CFG_FL_NAME = "./config/user.cfg"
 CFG_SECTION = "configuration_data"
 COIN_FILE_PATH = "./data/coins.txt"
 DB_FILE_PATH = "../data/analyzer.db"
@@ -38,7 +38,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
                                         coin_stale integer, 
                                         enabled integer
                                 ); """
-# oin.coin_base <class 'str'>
+# coin.coin_base <class 'str'>
 # coin.coin_name <class 'str'>
 # coin.coin_last <class 'float'>
 # coin.coin_volume <class 'float'>
@@ -66,6 +66,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
                                     VALUES(?,?,?,?,?,?,?,?,?,?,?); '''
 
         self.EXCHANGE = config.get(CFG_SECTION, "exchange")
+        self.MONGO_URL = "mongodb+srv://analyzerapp:" + \
+            config.get(CFG_SECTION, "mongo_pw") + \
+            "@cluster0.7ejxn.mongodb.net/AnalyzerDB?retryWrites=true&w=majority"
 
         # Get supported coin list from the environment
         # supported_coin_list = [

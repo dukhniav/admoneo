@@ -13,6 +13,7 @@ class Processor():
     def process_coin_list(self):
         load = Loader()
         db = Database()
+
         coins = load.get_coins()
 
         coin_counter = 0
@@ -20,7 +21,7 @@ class Processor():
         for x in coins['tickers']:
             coin_counter += 1
 
-            if db.check_coin(x['base']):
+            if not db.coin_exists(x['base']):
                 coins_added_counter += 1
                 coin = Coin(
                     x['base'],
@@ -35,5 +36,5 @@ class Processor():
                     x['is_stale'])
                 db.add_coin(coin)
 
-        print("INFO: Checked ", coin_counter,
+        print("INFO: Processed ", coin_counter,
               " coins, added ", coins_added_counter, "...")

@@ -32,16 +32,8 @@ class Coin(Base):
         self.coin_stale = coin_stale
         self.enabled = enabled
 
-    def __add__(self, other):
-        if isinstance(other, str):
-            return self.symbol + other
-        if isinstance(other, Coin):
-            return self.symbol + other.symbol
-        raise TypeError(
-            f"unsupported operand type(s) for +: 'Coin' and '{type(other)}'")
-
     def __repr__(self):
-        return f"[{self.symbol}]"
+        return f"[{self.coin_base}]"
 
     def info(self):
-        return {"symbol": self.symbol, "enabled": self.enabled}
+        return {"symbol": self.coin_name, "enabled": self.enabled}
