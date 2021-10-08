@@ -1,0 +1,13 @@
+# Define version
+version: 1
+
+# Define your URLs (Mandatory!)
+# URLs should start with - (remove the comment symbol #)
+# Replace the values with your tokens/ids
+# For example a telegram URL would look like:
+# - tgram://123456789:AABx8iXjE5C-vG4SDhf6ARgdFgxYxhuHb4A/-606743502
+urls:
+#- tgram://1813150002:AAHCecozvLMeM5Y3q2dkqWn5BFX78fxEHtU/1799058262
+# - discord://837478451576569876/CaaiCW9z3e0BHGHnHX4w5QFOsSYnIwFO54bqESl0YOxvgsRfDB-ocW0AJHei5dX304AJ/-1799058262
+# - slack://tokenA/tokenB/tokenC
+# More options here: https://github.com/caronc/apprise
