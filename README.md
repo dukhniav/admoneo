@@ -11,6 +11,7 @@ Python script to continuously analyze crypto data.
       2. [MongoDB Atlas](#MongoDB-Atlas)
    3. [Run analyzer](#Run)
 2. [Background](#Background)
+3. [Open to-dos](#future-to-dos)
 
 ---
 
@@ -67,3 +68,13 @@ python -m analyzer
 ## Background
 
 Background info here
+
+## Future To-dos
+
+[] [Daily news sentiment](https://www.cryptomaton.org/2021/04/05/how-to-analyse-daily-news-sentiment-for-cryptocurrency-with-python/)
+[] [Analyzing crypto markets](https://blog.patricktriest.com/analyzing-cryptocurrencies-python/)
+[] [Price prediction](https://towardsdatascience.com/demystifying-cryptocurrency-price-prediction-5fb2b504a110?gi=f6a5372b8e94)
+[] [Fundemental analysis](https://academy.binance.com/en/articles/a-guide-to-cryptocurrency-fundamental-analysis)
+[] [Indicators to watch](https://tradecraftjake.medium.com/cryptoasset-fundamental-analysis-7-indicators-ratios-to-watch-470c56076c2e)
+[] [Custom calculations](https://hackernoon.com/advanced-cryptocurrency-market-analysis-via-custom-calculations-ih1j3xix)
+[] [Crypto assessment methods](https://towardsdatascience.com/simple-method-to-assess-your-next-crypto-investment-9443f56ee4bf)
