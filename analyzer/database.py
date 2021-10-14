@@ -5,6 +5,8 @@ from pymongo import errors
 from pprint import pprint
 from urllib import parse
 
+from sqlalchemy.sql import selectable
+
 from .conf.config import Config
 from .models.coin import Coin
 from .logger import Logger
@@ -14,8 +16,10 @@ class Database():
     def __init__(self, logger: Logger, config: Config):
         self.logger = logger
         self.config = config
-        self.client = MongoClient(config.MONGO_URL)
+        self.client = MongoClient('127.0.0.1', 27017)
 
+        # Uncomment below to use Mongo Atlas db
+        # self.client = MongoClient(config.MONGO_URL)
         self.db = self.client.analyzerdb
 
     def add_new_coin(self, coin_base, coin_name):
@@ -60,6 +64,7 @@ class Database():
 
     def coin_exists(self, coin_base):
         coin_collection = self.db.get_collection("coins")
+        # self.logger.debug("Checking coin: ", coin_base)
         coin = coin_collection.find_one(
             {"_id": coin_base}, {"_id": 1})
 
@@ -70,6 +75,7 @@ class Database():
         return status
 
     def update_coin(self, coin: Coin):
+        self.logger.info("Contacting server")
         coin_collection = self.db.get_collection("coins")
         coin_collection.find_one_and_replace(
             {'_id': coin.coin_base}, {
