@@ -11,7 +11,7 @@ DB_FILE_PATH = "../data/analyzer.db"
 class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
     def __init__(self):
         # Init config
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(strict=False, interpolation=None)
         config["DEFAULT"] = {
             "file_path": "./coins.txt"
         }
@@ -30,5 +30,21 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             config.get(CFG_SECTION, "mongo_pw") + \
             "@cluster0.7ejxn.mongodb.net/AnalyzerDB?retryWrites=true&w=majority"
         self.SLEEP_TIME = config.get(CFG_SECTION, "bot_sleep_time")
+
+        # News
+        self.SENTIMENT_KEY = config.get(CFG_SECTION, "sentiment_key")
+        self.WEBSEARCH_KEY = config.get(CFG_SECTION, "websearch_key")
+
+        # Twitter
+        self.TWITTER_CONSUMER_KEY = config.get(
+            CFG_SECTION, "twitter_api_consumer_key")
+        self.TWITTER_CONSUMER_SECRET = config.get(
+            CFG_SECTION, "twitter_api_consumer_secret")
+        self.TWITTER_BEARER_TOKEN = config.get(
+            CFG_SECTION, "twitter_bearer_token")
+        self.TWITTER_ACCESS_KEY = config.get(
+            CFG_SECTION, "twitter_access_token")
+        self.TWITTER_ACCESS_SECRET = config.get(
+            CFG_SECTION, "twitter_access_token_secret")
 
         # self.CURRENT_COIN = os.environ.get("CURRENT_COIN") or config.get(USER_CFG_SECTION, "current_coin")

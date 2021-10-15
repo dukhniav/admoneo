@@ -6,14 +6,13 @@ from pycoingecko.api import CoinGeckoAPI
 
 from .logger import Logger
 from .conf.config import Config
-from .database import Database
+from .models.coin import Coin
 
 
 class Loader:
-    def __init__(self, logger: Logger, config: Config, database: Database, coingecko: CoinGeckoAPI):
+    def __init__(self, logger: Logger, config: Config,  coingecko: CoinGeckoAPI):
         self.config = config
         self.logger = logger
-        self.db = database
         self.cg = coingecko
 
     def get_coins(self):
@@ -22,9 +21,15 @@ class Loader:
         return coins
 
     def get_coin_list(self):
-        self.logger.info("Getting available coins from ", self.config.EXCHANGE)
+        self.logger.info("Getting available coins from " +
+                         self.config.EXCHANGE)
         coins = self.cg.get_exchanges_tickers_by_id(self.config.EXCHANGE)
         return coins
+
+    def get_coin_info(self, coin_name):
+        self.logger.debug("Getting info for: "+coin_name)
+        coin_data = self.cg.get_coin_by_id(coin_name)
+        return coin_data
 
     def get_exchange_status_update(self):
         # self.cg.get_exchanges_status_updates_by_id
