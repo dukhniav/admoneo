@@ -6,6 +6,7 @@ CFG_FL_NAME = "./config/user.cfg"
 CFG_SECTION = "configuration_data"
 COIN_FILE_PATH = "./data/coins.txt"
 DB_FILE_PATH = "../data/analyzer.db"
+APPRISE_CONFIG_PATH = "./config/apprise.yml"
 
 
 class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -15,6 +16,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         config["DEFAULT"] = {
             "file_path": "./coins.txt"
         }
+        config["APPRRISE"] = {"file_path": APPRISE_CONFIG_PATH}
+
         if not os.path.exists(CFG_FL_NAME):
             print(
                 "No configuration file (user.cfg) found! See README. Assuming default config...")
@@ -22,14 +25,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         else:
             config.read(CFG_FL_NAME)
 
-        self.FILE_PATH = COIN_FILE_PATH
-        self.DB_PATH = DB_FILE_PATH
-
+        # Data
         self.EXCHANGE = config.get(CFG_SECTION, "exchange")
-        self.MONGO_URL = "mongodb+srv://analyzerapp:" + \
-            config.get(CFG_SECTION, "mongo_pw") + \
-            "@cluster0.7ejxn.mongodb.net/AnalyzerDB?retryWrites=true&w=majority"
-        self.SLEEP_TIME = config.get(CFG_SECTION, "bot_sleep_time")
 
         # News
         self.SENTIMENT_KEY = config.get(CFG_SECTION, "sentiment_key")
@@ -46,5 +43,19 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             CFG_SECTION, "twitter_access_token")
         self.TWITTER_ACCESS_SECRET = config.get(
             CFG_SECTION, "twitter_access_token_secret")
+
+        # Notifications
+        self.TELEGRAM_TOKEN = None
+        self.TELEGRAM_CHAT_ID = None
+        self.APPRISE_CONFIG_PATH = APPRISE_CONFIG_PATH
+
+        # Fiat
+        self.SUPPORTED_FIAT = [
+            "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK", "DKK",
+            "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "JPY",
+            "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PKR", "PLN",
+            "RUB", "SEK", "SGD", "THB", "TRY", "TWD", "ZAR", "USD",
+            "BTC", "ETH", "XRP", "LTC", "BCH"
+        ]
 
         # self.CURRENT_COIN = os.environ.get("CURRENT_COIN") or config.get(USER_CFG_SECTION, "current_coin")
