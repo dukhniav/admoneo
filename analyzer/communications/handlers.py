@@ -5,7 +5,8 @@ from telegram.ext import (MessageHandler, Filters,
                           CallbackContext, ConversationHandler, CommandHandler)
 
 from ..communications import (CHOOSING, STATUS, TYPING_REPLY, TYPING_CHOICE)
-reply_keyboard = [
+
+top_menu = [
     ["💵 Averages", 'Favourite colour'],
     ['Number of siblings', 'Something else...'],
     ['Done'],
@@ -19,7 +20,8 @@ keyboard = [
 ]
 
 markup = ReplyKeyboardMarkup(
-    reply_keyboard, one_time_keyboard=True)
+    top_menu, one_time_keyboard=True)
+
 
 
 def facts_to_str(user_data: Dict[str, str]) -> str:

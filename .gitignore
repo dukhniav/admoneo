@@ -1,8 +1,12 @@
 *.db
-user.cfg
+config.cfg
+credentials.cfg
 coins.txt
 apprise.yml
 /dist
 /analyzer_old2
 __pycache__
 /logs/*
+analyzer/pycoingecko
+.DS_Store
+.history

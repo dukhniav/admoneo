@@ -15,21 +15,17 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 from typing import Dict
+import time
+import schedule
+import requests
+
+from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
 
 from ..logger import Logger
 from ..configuration.configuration import Config
-from ..communications import utils
+from ..communications import STATUS, utils
 from ..communications import handlers
-
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, ForceReply
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackContext,
-)
+from ..configuration import constants
 
 
 class TelegramBot:
@@ -38,24 +34,23 @@ class TelegramBot:
         self.config = config
         self.logger.info("Setting up telegram comms...")
         self.enabled = utils.setup_telegram_constants(
-            config, logger, config.APPRISE_CONFIG_PATH)
+            config, logger)
+        self.token = config.TGRAM_TOKEN
+        self.chat_id = config.TGRAM_CHAT_ID
 
-    def run_bot(self) -> None:
-        """Run the bot."""
-        # Create the Updater and pass it your bot's token.
-        updater = Updater(self.config.TELEGRAM_TOKEN)
+        self.updater = Updater(self.config.TGRAM_TOKEN)
+        self.dispatcher = self.updater.dispatcher
+        self.updater.start_polling()
 
-        # Get the dispatcher to register handlers
-        dispatcher = updater.dispatcher
+    def send_msg(self, msg):
+        send_text = 'https://api.telegram.org/bot' + self.token + \
+            '/sendMessage?chat_id=' + self.chat_id + '&parse_mode=Markdown&text=' + msg
 
-        # Add conversation handler with the states CHOOSING, TYPING_CHOICE and TYPING_REPLY
+        response = requests.get(send_text)
 
-        dispatcher.add_handler(handlers.conv_handler)
+        return response.json()
 
-        # Start the Bot
-        updater.start_polling()
-
-        # Run the bot until you press Ctrl-C or the process receives SIGINT,
-        # SIGTERM or SIGABRT. This should be used most of the time, since
-        # start_polling() is non-blocking and will stop the bot gracefully.
-        updater.idle()
+    # def report(self):
+    #     my_balance = 10   ## Replace this number with an API call to fetch your account balance
+    #     my_message = "Current balance is: {}".format(my_balance)   ## Customize your message
+    #     self.send_msg(my_message)

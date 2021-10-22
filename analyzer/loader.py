@@ -5,7 +5,7 @@ from pycoingecko import CoinGeckoAPI as cg
 from pycoingecko.api import CoinGeckoAPI
 
 from .logger import Logger
-from .conf.config import Config
+from analyzer.configuration.configuration import Config
 from .models.coin import Coin
 
 
@@ -14,6 +14,7 @@ class Loader:
         self.config = config
         self.logger = logger
         self.cg = coingecko
+        self.logger.debug("Starting loader...")
 
     def get_coins(self):
         self.logger.info("Getting coin values")

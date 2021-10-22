@@ -1,47 +1,28 @@
 import os
-
 import yaml
+
+from typing import Dict, Any
 
 from ..configuration.configuration import Config
 from ..logger import Logger
 
 
-def setup_telegram_constants(config: Config, logger: Logger, apprise_yml_path):
+def setup_telegram_constants(config: Config, logger: Logger):
     enabled = True
     logger.info("Retrieving Telegram token and chat_id from apprise.yml file.")
-    telegram_url = None
-    if os.path.exists(apprise_yml_path):
-        with open(apprise_yml_path) as f:
-            try:
-                parsed_urls = yaml.load(f, Loader=yaml.FullLoader)["urls"]
-            except Exception:
-                logger.error(
-                    "Unable to correctly read apprise.yml file. Make sure it is correctly set up. Aborting."
-                )
-                enabled = False
-            for url in parsed_urls:
-                if url.startswith("tgram"):
-                    telegram_url = url.split("//")[1]
-        if not telegram_url:
-            logger.error(
-                "No telegram configuration was found in your apprise.yml file. Aborting."
-            )
-            enabled = False
-    else:
-        logger.error(
-            f'Unable to find apprise.yml file at "{apprise_yml_path}". Aborting.'
-        )
+    token = config.TGRAM_TOKEN
+    chat_id = config.TGRAM_CHAT_ID
+
+    if token == None or chat_id == None:
         enabled = False
-    try:
-        config.TELEGRAM_TOKEN = telegram_url.split("/")[0]
-        config.TELEGRAM_CHAT_ID = telegram_url.split("/")[1]
-        logger.info(
-            f"Successfully retrieved Telegram configuration. "
-            f"The bot will only respond to user in the chat with chat_id {config.TELEGRAM_CHAT_ID}"
-        )
-    except Exception:
         logger.error(
-            "No chat_id has been set in the yaml configuration, anyone would be able to control your bot. Aborting."
-        )
-        enabled = False
+            "Unable to extract telegram secrets. Make sure it's correctly set-up. Aborting...")
+
+    config.TGRAM_ENABLED = enabled
     return enabled
+
+
+def facts_to_str(self, user_data: Dict[str, str]) -> str:
+    """Helper function for formatting the gathered user info."""
+    facts = [f'{key} - {value}' for key, value in user_data.items()]
+    return "\n".join(facts).join(['\n', '\n'])

@@ -1,6 +1,6 @@
 from .database import Database
 from .logger import Logger
-from .conf.config import Config
+from .configuration.configuration import Config
 from textblob import TextBlob
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import SnowballStemmer, WordNetLemmatizer
@@ -39,8 +39,8 @@ class TweetMiner():
         self.lemmatizer = WordNetLemmatizer()
 
         logger.debug("initializing twitter api")
-        self.client = tweepy.Client(self.config.TWITTER_BEARER_TOKEN, self.config.TWITTER_CONSUMER_KEY, self.config.TWITTER_CONSUMER_SECRET,
-                                    self.config.TWITTER_ACCESS_KEY, self.config.TWITTER_ACCESS_SECRET, wait_on_rate_limit=True)
+        self.client = tweepy.Client(self.config.TWITTER_BEARER_TOKEN, self.config.TWITTER_API_CONSUMER_KEY, self.config.TWITTER_API_CONSUMER_SECRET,
+                                    self.config.TWITTER_ACCESS_TOKEN, self.config.TWITTER_ACCESS_TOKEN_SECRET, wait_on_rate_limit=True)
 
         logger.debug("twitter api initialized")
 
@@ -92,7 +92,7 @@ class TweetMiner():
         while True:
             poll_iteration, name = self.update_queue.get()
 
-            print(" --- ", name)
+            # print(" --- ", name)
             try:
 
                 self.mine_crypto_currency_tweets(query=name)
