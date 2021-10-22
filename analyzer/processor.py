@@ -5,7 +5,7 @@ import pandas as pd
 from .models.coin import Coin
 from .database import Database
 from .loader import Loader
-from .conf.config import Config
+from .configuration.configuration import Config
 from .logger import Logger
 
 
@@ -15,6 +15,7 @@ class Processor():
         self.loader = loader
         self.db = db
         self.config = config
+        self.logger.debug("Starting Processor...")
 
     def check_new_coins(self):
         coin_list = self.loader.get_coin_list()

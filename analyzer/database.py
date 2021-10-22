@@ -5,9 +5,7 @@ from pymongo import errors
 from pprint import pprint
 from urllib import parse
 
-from sqlalchemy.sql import selectable
-
-from .conf.config import Config
+from .configuration.configuration import Config
 from .models.coin import Coin
 from .logger import Logger
 from .loader import Loader
@@ -19,6 +17,8 @@ class Database():
         self.config = config
         self.loader = loader
         self.client = MongoClient('127.0.0.1', 27017)
+        self.logger.debug("Starting database...")
+
 
         # Uncomment below to use Mongo Atlas db
         # self.client = MongoClient(config.MONGO_URL)

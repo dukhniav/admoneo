@@ -8,7 +8,7 @@ class Logger:
     Logger = None
     NotificationHandler = None
 
-    def __init__(self, logging_service="crypto_analyzer", enable_notifications=True):
+    def __init__(self, config, logging_service="analyzer", enable_notifications=True):
         # Logger setup
         self.Logger = logging.getLogger(f"{logging_service}_logger")
         self.Logger.setLevel(logging.DEBUG)
@@ -26,9 +26,11 @@ class Logger:
         ch.setLevel(logging.INFO)
         ch.setFormatter(formatter)
         self.Logger.addHandler(ch)
+        self.config = config
 
         # notification handler
-        self.NotificationHandler = NotificationHandler(enable_notifications)
+        self.NotificationHandler = NotificationHandler(
+            self.config, enable_notifications)
 
     def log(self, message, level="info", notification=True):
 
@@ -55,3 +57,7 @@ class Logger:
 
     def debug(self, message, notification=False):
         self.log(message, "debug", notification)
+
+    def update_logger(self):
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S', filename='Logs/testGene.log', filemode='w')

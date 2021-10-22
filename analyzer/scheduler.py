@@ -17,6 +17,7 @@ class SafeScheduler(Scheduler):
     def __init__(self, logger: Logger, rerun_immediately=True):
         self.logger = logger
         self.rerun_immediately = rerun_immediately
+        self.logger.debug("Starting Scheduler...")
 
         super().__init__()
 

@@ -3,22 +3,28 @@ import threading
 from os import path
 
 import apprise
+import logging
 
-APPRISE_CONFIG_PATH = "./config/apprise.yml"
+from analyzer import __logger__
+from analyzer.configuration.configuration import Config
+
+logger = logging.getLogger(__logger__)
 
 
 class NotificationHandler:
-    def __init__(self, enabled=True):
-        if enabled and path.exists(APPRISE_CONFIG_PATH):
+    def __init__(self, config: Config, enabled=True):
+        self.config = config
+        if self.config.TGRAM_ENABLED:
             self.apobj = apprise.Apprise()
-            config = apprise.AppriseConfig()
-            config.add(APPRISE_CONFIG_PATH)
-            self.apobj.add(config)
+            apprise_config = apprise.AppriseConfig()
+            apprise_config.add(self.config)
+            self.apobj.add(apprise_config)
             self.queue = queue.Queue()
             self.start_worker()
             self.enabled = True
         else:
             self.enabled = False
+        logger.debug("Starting NotificationHandler...")
 
     def start_worker(self):
         threading.Thread(target=self.process_queue, daemon=True).start()
