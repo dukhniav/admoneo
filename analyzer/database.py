@@ -1,136 +1,141 @@
 import json
+import os
+import time
+from contextlib import contextmanager
+from datetime import datetime, timedelta
+from typing import List, Optional, Union
 
-from pymongo import MongoClient
-from pymongo import errors
-from pprint import pprint
-from urllib import parse
-
-from .configuration.configuration import Config
+import sqlite3
+from sqlite3 import Error
+from datetime import datetime
+from sqlite3 import Error
+from sqlite3.dbapi2 import Connection
 from .models.coin import Coin
-from .logger import Logger
-from .loader import Loader
 
+import logging
+from .loader import Loader
+from .utils.enums.tables import Table
+from analyzer.utils import db_queries
+from analyzer.communications.telegram_bot import TelegramBot
+
+from analyzer.config import Config
+from .models import *  # pylint: disable=wildcard-import
+
+logger = logging.getLogger(__name__)
 
 class Database():
-    def __init__(self, logger: Logger, config: Config, loader: Loader):
-        self.logger = logger
+    def __init__(self, t_gram: TelegramBot, loader: Loader, config: Config):
         self.config = config
         self.loader = loader
-        self.client = MongoClient('127.0.0.1', 27017)
-        self.logger.debug("Starting database...")
+        self.tgram = t_gram
+        logger.info("Initializing database...")
+        self.create_db()
+
+    def create_db(self):
+        self.conn = self.create_connection()
+        if self.conn is not None:
+            # Create tables
+            for table in Table:
+                self.create_table(table)
+        else:
+            logger.debug("Error! Cannot create the database connection.")
+
+    def send_update(self, msg):
+        if not self.config.TGRAM_ENABLED():
+            return
+
+        self.tgram.send_msg(msg)
+        # self.socketio_client.emit(
+        #     "update",
+        #     {"table": model.__tablename__, "data": model.info()},
+        #     namespace="/backend",
+        # )
 
 
-        # Uncomment below to use Mongo Atlas db
-        # self.client = MongoClient(config.MONGO_URL)
-        self.db = self.client.analyzerdb
-
-    def add_tweet_sentiment(self, coin_base, coin_name, sentiment, timestamp):
+    def create_connection(self):
+        """ create a database connection to the SQLite database
+            specified by db_file
+        :param db_file: database file
+        :return: Connection object or None
+        """
+        db_path = self.config.DB_PATH
+        conn = None
         try:
-            self.db.validate_collection("sentiment")
-        except errors.OperationFailure:
-            self.logger.info("Creating collection 'Sentiment'")
-            self.db.create_collection("sentiment")
-        coin_collection = self.db.get_collection("sentmient")
-        coin_collection.insert_one(
-            {
-                "_id": coin_base,
-                "coin_name": coin_name,
-                "sentiment": sentiment,
-                "last_updated": timestamp
-            }
-        )
+            conn = sqlite3.connect(db_path)
+            return conn
+        except Error as e:
+            print(e)
 
-    def add_new_coin(self, coin_base, coin_name):
+        return conn
+
+    def check_table_exists(self, table_name):
+        table_exists = True
         try:
-            # Try to validate a collection
-            self.db.validate_collection("coin_list")
-        except errors.OperationFailure:  # If the collection doesn't exist
-            self.logger.info("Creating cllection 'Coin List'")
-            self.db.create_collection("coin_list")
+            cur = self.conn.cursor()
+            cur.execute(db_queries.check_table, (table_name,))
+        except Error as e:
+            print(e)
+        if cur.fetchone()[0] == 0:
+            table_exists = False
+        return table_exists
 
-        coin_collection = self.db.get_collection("coin_list")
-        coin_collection.insert_one(
-            {
-                "_id": coin_base,
-                "coin_name": coin_name
-            }
-        )
+    def create_table(self, table: Table):
+        """ create a table from the create_table_sql statement
+        :param conn: Connection object
+        :param create_table_sql: a CREATE TABLE statement
+        :return:
+        """
+        table_exists = self.check_table_exists(table.__str__())
 
-    def add_coin(self, coin: Coin):
         try:
-            # Try to validate a collection
-            self.db.validate_collection("coin_info")
-        except errors.OperationFailure:  # If the collection doesn't exist
-            self.logger.info("Creating cllection 'Coin Info'")
-            self.db.create_collection("coin_info")
+            cur = self.conn.cursor()
+            if table == Table.COIN and not table_exists:
+                logger.info("Creating '" + table.__str__() + "' table")
+                cur.execute(db_queries.create_coin_list_table)
+            elif table == Table.DATA and not table_exists:
+                logger.info("Creating '" + table.__str__() + "' table")
+                cur.execute(db_queries.create_coin_data_table)
+            elif table == table.TWITTER and not table_exists:
+                logger.warning("Twitter query not implemented")
+            else:
+                logger.info("Table " + table.__str__() + " already exists")
+        except Error as e:
+            print(e)
 
-        coin_collection = self.db.get_collection("coin_info")
-        coin_collection.insert_one(
-            {"_id": coin.coin_base,
-                "coin_name": coin.coin_name,
-                "coin_symbol": coin.coin_symbol,
-                "coin_last": coin.coin_last,
-                "coin_volume": coin.coin_volume,
-                "bid_ask_spread_percentage": coin.bid_ask_spread_percentage,
-                "target_coin_name": coin.target_coin_name,
-                "last_fetch_at": coin.last_fetch_at,
-                "coin_trust": coin.coin_trust,
-                "coin_anomaly": coin.coin_anomaly,
-                "coin_stale": coin.coin_stale,
-                "enabled": coin.enabled
-             }
-        )
+    def add_new_coin(self, _id, name):
+        """
+        Create a new project into the projects table
+        :param conn:
+        :param _id:
+        :param name:
+        :return: project id
+        """
+        cur = self.conn.cursor()
+        cur.execute(db_queries.add_new_coin, (_id, name,
+                    self.config.EXCHANGE, datetime.now(),))
+        self.conn.commit()
+        return cur.lastrowid
 
-    def coin_exists(self, coin_base):
-        coin_collection = self.db.get_collection("coin_list")
-        # self.logger.info("Checking coin: ", coin_base)
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
+    def check_coin_exists(self, _id) -> bool:
+        coin_exists = True
+        cur = self.conn.cursor()
+        cur.execute(db_queries.coin_exists, (_id,))
+        if cur.fetchone()[0] == 0:
+            coin_exists = False
+        return coin_exists
 
-        status = True
-        if coin is None:
-            status = False
+    def get_coin_list(self):
+        cur = self.conn.cursor()
+        coin_list = cur.execute(db_queries.get_coin_list).fetchall()
+        return coin_list
 
-        return status
-
-    def coin_info_exists(self, coin_base):
-        coin_collection = self.db.get_collection("coin_info")
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
-
-        status = True
-        if coin is None:
-            status = False
-
-        return status
-
-    def update_coin(self, coin: Coin):
-        coin_collection = self.db.get_collection("coin_info")
-        coin_collection.update_one({"_id": coin.coin_base},
-                                   {"$set": {
-                                       "coin_last": coin.coin_last,
-                                       "coin_volume": coin.coin_volume,
-                                       "bid_ask_spread_percentage": coin.bid_ask_spread_percentage,
-                                       "last_fetch_at": coin.last_fetch_at,
-                                       "coin_trust": coin.coin_trust,
-                                       "coin_anomaly": coin.coin_anomaly,
-                                       "coin_stale": coin.coin_stale,
-                                   }
-        }, upsert=True)
-
-        # db.collection.update_one({"_id":"key1"}, {"$set": {"id":"key1"}}, upsert=True)
-
-    def get_coin_name(self, coin_base):
-        coin_collection = self.db.get_collection("coins")
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
-
-        coin_name = None
-        if coin is not None:
-            coin_name = coin.coin_name
-
-        return coin_name
-
-    def get_all_coins(self):
-        db = self.db.get_collection("coin_list")
-        return list(db.find({}, {"coin_name": 1}))
+    def add_coin_data(self, coin: Coin):
+        """
+        update priority, begin_date, and end date of a task
+        :param conn:
+        :param coin:
+        :return: last row
+        """
+        cur = self.conn.cursor()
+        cur.execute(db_queries.add_coin_data, coin.__info__())
+        self.conn.commit()

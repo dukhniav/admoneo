@@ -21,18 +21,19 @@ import requests
 
 from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
 
-from ..logger import Logger
-from ..configuration.configuration import Config
+import logging
+from ..config import Config
 from ..communications import STATUS, utils
 from ..communications import handlers
-from ..configuration import constants
+from analyzer import constants
+from analyzer.communications import utils
 
+logger = logging.getLogger(__name__)
 
 class TelegramBot:
-    def __init__(self, logger: Logger, config: Config):
-        self.logger = logger
+    def __init__(self, config: Config):
         self.config = config
-        self.logger.info("Setting up telegram comms...")
+        logger.info("Setting up telegram comms...")
         self.enabled = utils.setup_telegram_constants(
             config, logger)
         self.token = config.TGRAM_TOKEN

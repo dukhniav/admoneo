@@ -23,3 +23,4 @@ textblob=0.15.3
 arrow=1.2.0
 sdnotify=0.3.2
 rapidjson=1.0.0
+switch=1.1.0

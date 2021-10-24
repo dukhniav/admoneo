@@ -19,7 +19,7 @@ from telegram import Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 from ..logger import Logger
-from ..configuration.configuration import Config
+from ..config import Config
 from ..communications import utils
 
 
@@ -28,8 +28,8 @@ class Echobot:
         self.logger = logger
         self.config = config
         self.logger.info("Setting up telegram comms...")
-        self.enabled = utils.setup_telegram_constants(
-            config, logger, config.APPRISE_CONFIG_PATH)
+        # self.enabled = utils.setup_telegram_constants(
+        #     config, logger, config.APPRISE_CONFIG_PATH)
         
 
     # Define a few command handlers. These usually take the two arguments update and

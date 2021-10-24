@@ -78,3 +78,10 @@ class StrategyError(AnalyzerException):
     Errors with custom user-code detected.
     Usually caused by errors in the strategy.
     """
+
+
+class TelegramException(AnalyzerException):
+    """
+    Errors with custom user-code detected.
+    Usually caused by errors while setting up
+    """

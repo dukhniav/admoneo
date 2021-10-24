@@ -8,29 +8,25 @@ class Logger:
     Logger = None
     NotificationHandler = None
 
-    def __init__(self, config, logging_service="analyzer", enable_notifications=True):
+    def __init__(self, logging_service="crypto_trading", enable_notifications=True):
         # Logger setup
         self.Logger = logging.getLogger(f"{logging_service}_logger")
         self.Logger.setLevel(logging.DEBUG)
-        self.Logger.propagate = False
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         # default is "logs/crypto_trading.log"
-        fh = logging.FileHandler(f"./logs/{logging_service}.log")
+        fh = logging.FileHandler(f"logs/{logging_service}.log")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
         self.Logger.addHandler(fh)
 
         # logging to console
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        ch.setLevel(logging.DEBUG)
         ch.setFormatter(formatter)
         self.Logger.addHandler(ch)
-        self.config = config
 
         # notification handler
-        self.NotificationHandler = NotificationHandler(
-            self.config, enable_notifications)
+        self.NotificationHandler = NotificationHandler(enable_notifications)
 
     def log(self, message, level="info", notification=True):
 
@@ -44,7 +40,7 @@ class Logger:
             self.Logger.debug(message)
 
         if notification and self.NotificationHandler.enabled:
-            self.NotificationHandler.send_notification(str(message))
+            self.NotificationHandler.send_notification(message)
 
     def info(self, message, notification=True):
         self.log(message, "info", notification)
@@ -55,9 +51,5 @@ class Logger:
     def error(self, message, notification=True):
         self.log(message, "error", notification)
 
-    def debug(self, message, notification=False):
+    def debug(self, message, notification=True):
         self.log(message, "debug", notification)
-
-    def update_logger(self):
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s',
-                            datefmt='%a, %d %b %Y %H:%M:%S', filename='Logs/testGene.log', filemode='w')

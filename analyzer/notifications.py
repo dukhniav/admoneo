@@ -3,28 +3,22 @@ import threading
 from os import path
 
 import apprise
-import logging
 
-from analyzer import __logger__
-from analyzer.configuration.configuration import Config
-
-logger = logging.getLogger(__logger__)
+APPRISE_CONFIG_PATH = "config/apprise.yml"
 
 
 class NotificationHandler:
-    def __init__(self, config: Config, enabled=True):
-        self.config = config
-        if self.config.TGRAM_ENABLED:
+    def __init__(self, enabled=True):
+        if enabled and path.exists(APPRISE_CONFIG_PATH):
             self.apobj = apprise.Apprise()
-            apprise_config = apprise.AppriseConfig()
-            apprise_config.add(self.config)
-            self.apobj.add(apprise_config)
+            config = apprise.AppriseConfig()
+            config.add(APPRISE_CONFIG_PATH)
+            self.apobj.add(config)
             self.queue = queue.Queue()
             self.start_worker()
             self.enabled = True
         else:
             self.enabled = False
-        logger.debug("Starting NotificationHandler...")
 
     def start_worker(self):
         threading.Thread(target=self.process_queue, daemon=True).start()
@@ -32,7 +26,6 @@ class NotificationHandler:
     def process_queue(self):
         while True:
             message, attachments = self.queue.get()
-
             if attachments:
                 self.apobj.notify(body=message, attach=attachments)
             else:

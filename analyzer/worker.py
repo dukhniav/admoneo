@@ -2,10 +2,12 @@
 Main Analyzer worker class.
 """
 import logging
+import threading
 import time
 import traceback
 from os import getpid
 from typing import Any, Callable, Dict, Optional
+from threading import Thread, Timer
 
 import sdnotify
 
@@ -15,28 +17,33 @@ from analyzer.utils.enums import State
 from analyzer.utils.exceptions import OperationalException, TemporaryError
 from analyzer.analyzer_bot import Analyzer
 from analyzer.configuration import constants
-
+from analyzer.utils.repeatable_timer import TimerEx
 
 logger = logging.getLogger(__name__)
 
 
 class Worker:
     """
-    Analyzerbot worker class
+    Analyzer worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Dict[str, Any] = None) -> None:
+    def __init__(self, config: Config) -> None:
         """
         Init all variables and objects the bot needs to work
         """
         logger.info(f"Starting worker {__version__}")
 
-        self._args = args
         self._config = config
         self._init(False)
 
-        self.last_throttle_start_time: float = 0
-        self._heartbeat_msg: float = 0
+        # def f(id):
+        #     print 'thread function %s' %(id)
+        #     return
+
+        # if __name__ == '__main__':
+        #     for i in range(3):
+        #         t = threading.Thread(target=f, args=(i,))
+        #         t.start()
 
         # Tell systemd that we completed initialization phase
         self._notify("READY=1")
@@ -47,19 +54,42 @@ class Worker:
         """
         if reconfig or self._config is None:
             # Load configuration
-            self._config = Config(self._args, None).get_config()
+            self._config = Config()
 
         # Init the instance of the bot
         self.Analyzer = Analyzer(self._config)
 
-        internals_config = self._config.get('internals', {})
-        self._throttle_secs = internals_config.get('process_throttle_secs',
-                                                   constants.PROCESS_THROTTLE_SECS)
-        self._heartbeat_interval = internals_config.get(
-            'heartbeat_interval', 60)
+        # self._get_running_threads
+        # self._stop_threads(self._get_running_threads)
 
-        self._sd_notify = sdnotify.SystemdNotifier() if \
-            self._config.get('internals', {}).get('sd_notify', False) else None
+        self._throttle_secs = self._config.PROCESS_THROTTLE_SECS
+        self._heartbeat_interval = self._config.HEARTBEAT_INTERVAL
+
+        self._short_throttle_secs = self._config.SHORT_THROTTLE
+        self._medium_throttle_secs = self._config.MEDIUM_THROTTLE
+        self._long_throttle_secs = self._config.LONG_THROTTLE
+
+        self.short_shredder = TimerEx(
+            self._config.HEARTBEAT_INTERVAL, self.Analyzer.process_short())
+        self.medium_shredder = TimerEx(
+            self._medium_throttle_secs, self.Analyzer.process_medium())
+        self.long_shredder = TimerEx(
+            self._long_throttle_secs, self.Analyzer.process_long())
+
+        logger.info(
+            f"Short shreader is alive? {self.short_shredder.is_alive()}")
+        logger.info(
+            f"Med shreader is alive? {self.medium_shredder.is_alive()}")
+        logger.info(f"Long shreader is alive? {self.long_shredder.is_alive()}")
+
+        # Make daemons
+        # self.short_shredder.daemon = True
+        # self.medium_shredder.daemon = True
+        # self.long_shredder.daemon = True
+
+        self._sd_notify = sdnotify.SystemdNotifier()
+        #  if \
+        #     self._config.get('internals', {}).get('sd_notify', False) else None
 
     def _notify(self, message: str) -> None:
         """
@@ -77,6 +107,9 @@ class Worker:
             if state == State.RELOAD_CONFIG:
                 self._reconfigure()
 
+    def _get_running_threads(self):
+        return threading.enumerate()
+
     def _worker(self, old_state: Optional[State]) -> State:
         """
         The main routine that runs each throttling iteration and handles the states.
@@ -90,11 +123,10 @@ class Worker:
             self.Analyzer.notify_status(f'{state.name.lower()}')
 
             logger.info(f"Changing state to: {state.name}")
-            if state == State.RUNNING:
-                self.Analyzer.startup()
+            # if state == State.RUNNING:
 
-            if state == State.STOPPED:
-                self.Analyzer.check_for_open_trades()
+            # if state == State.STOPPED:
+            #     self.Analyzer.check_for_open_trades()
 
             # Reset heartbeat timestamp to log the heartbeat message at
             # first throttling iteration when the state changes
@@ -106,13 +138,18 @@ class Worker:
 
             self._throttle(func=self._process_stopped,
                            throttle_secs=self._throttle_secs)
+            self.short_shredder.cancel()
+            self.medium_shredder.cancel()
+            self.long_shredder.cancel()
 
         elif state == State.RUNNING:
             # Ping systemd watchdog before throttling
             self._notify("WATCHDOG=1\nSTATUS=State: RUNNING.")
-
-            self._throttle(func=self._process_running,
-                           throttle_secs=self._throttle_secs)
+            # self._throttle(func=self._process_running,
+            #                throttle_secs=self._short_throttle_secs)
+            self.short_shredder.start()
+            self.medium_shredder.start()
+            self.long_shredder.start()
 
         if self._heartbeat_interval:
             now = time.time()
@@ -146,7 +183,7 @@ class Worker:
 
     def _process_running(self) -> None:
         try:
-            self.Analyzer.process()
+            logger.info("processing")
         except TemporaryError as error:
             logger.warning(
                 f"Error: {error}, retrying in {constants.RETRY_TIMEOUT} seconds...")
