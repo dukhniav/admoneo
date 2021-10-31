@@ -2,18 +2,19 @@
 import configparser
 import os
 
-from .models.coin import Coin
-from analyzer import constants
+from ..config import constants
 
 CONFIG_NAME = "./config/config.cfg"
 CONFIG_SECTION = "configuration_data"
+NOTI_SECTION = "notifications"
 CREDENTIALS_NAME = "./config/credentials.cfg"
 CREDENTIALS_SECTION = "credentials_data"
+APPRISE_PATH = "./config/apprise.yml"
+NOTIFICATIONS_ROOT = "./notifications/"
 
 
 class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
     def __init__(self):
-        # Init config
         config = configparser.ConfigParser()
         config["DEFAULT"] = {
             "bridge": "USDT",
@@ -57,17 +58,33 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.LOGFILE_PATH = constants.LOGFILE_PATH
         self.DB_PATH = constants.DB_PATH
         self.COINS_PATH = constants.COINLIST_PATH
+        self.TGRAM_URL = "https://api.telegram.org/bot"
+        self.APPRISE_PATH = APPRISE_PATH
+        self.NOTIF_ROOT_PATH = NOTIFICATIONS_ROOT
+
+        # Notifications
+        self.TGRAM_UPDATE_BROADCASTED_BEFORE = False
+        self.NOTI_UPDATE_BROADCASTED_BEFORE = False
+        self.TGRAM_KEYBOARD = None
+        self.TGRAM_STATUS = config.get(NOTI_SECTION, "status") or constants.DEFAULT_STATUS
+        self.TGRAM_WARNING = config.get(NOTI_SECTION, "warning") or constants.DEFAULT_WARNING
+        self.TGRAM_STARTUP = config.get(NOTI_SECTION, "startup") or constants.DEFAULT_STARTUP
+
+        self.TGRAM_NOTI = "on"
+        if self.TGRAM_STATUS == "off" and self.TGRAM_WARNING == "off" and self.TGRAM_WARNING == "off":
+            self.TGRAM_NOTI = "off"
 
         # APIs
         self.BINANCE_ENABLED = False
         self.TGRAM_ENABLED = False
+
 
         self.BINANCE_TLD = os.environ.get(
             "TLD") or config.get(CONFIG_SECTION, "tld")
 
         # Prune settings
         self.SCOUT_HISTORY_PRUNE_TIME = float(
-            os.environ.get("HOURS_TO_KEEP_SCOUTING_HISTORY") or config.get(
+            os.environ.get("") or config.get(
                 CONFIG_SECTION, "hourToKeepScoutHistory")
         )
 
@@ -76,10 +93,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             os.environ.get("SCOUT_MULTIPLIER") or config.get(
                 CONFIG_SECTION, "scout_multiplier")
         )
-        self.SCOUT_SLEEP_TIME = int(
-            os.environ.get("SCOUT_SLEEP_TIME") or config.get(
-                CONFIG_SECTION, "scout_sleep_time")
-        )
+        
 
         # # Get supported coin list from the environment
         # supported_coin_list = [
@@ -118,3 +132,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             constants.CONFIG_SECTION, "bot_sleep_time"))
         self.CHECK_COINS_INTERVAL = int(constants.CHECK_COINS)
         self.UPDATE_COINS_INTERVAL = int(constants.UPDATE_COINS)
+        self.LOG_LIFESPAN = int(
+            config.get(CONFIG_SECTION, "log_lifespan") or constants.LOG_LIFE
+        )
+    

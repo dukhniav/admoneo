@@ -1,11 +1,11 @@
 import logging
 import sys
 from logging import Formatter
-from logging.handlers import BufferingHandler, RotatingFileHandler, SysLogHandler
+from logging.handlers import BufferingHandler, RotatingFileHandler, SysLogHandler, TimedRotatingFileHandler
 from typing import Any, Dict
 
 from analyzer.utils.exceptions import OperationalException
-from analyzer.config import Config
+from .config.config import Config
 
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,14 @@ def setup_logging(config: Config) -> None:
             handler_rf.setFormatter(Formatter(LOGFORMAT))
             logging.root.addHandler(handler_rf)
 
+    purge_settings(logfile, config)
     logging.root.setLevel(logging.INFO if verbosity < 1 else logging.DEBUG)
     _set_loggers(verbosity, config.VERBOSITY_SIMPLE)
 
     logger.info('Verbosity set to %s', verbosity)
+
+
+def purge_settings(logfile, config: Config):
+    purge_handler = TimedRotatingFileHandler(
+        filename=logfile, when='D', interval=1, backupCount=config.LOG_LIFESPAN, encoding='utf-8', delay=False)
+    logging.root.addHandler(purge_handler)

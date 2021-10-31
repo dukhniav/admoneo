@@ -8,17 +8,13 @@ from binance.exceptions import BinanceAPIException
 from cachetools import TTLCache, cached
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.sqltypes import Boolean
+from logging import getLogger
 
-from ..config import Config
+from ..config.config import Config
 from ..database import Database
-from ..logger import Logger
-from ..models import Coin
+from ..models.coin import Coin
 
-# Global Vars
-attempt_sell = True
-attempt_buy = True
-
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class AllTickers:  # pylint: disable=too-few-public-methods
     def __init__(self, all_tickers: List[Dict]):

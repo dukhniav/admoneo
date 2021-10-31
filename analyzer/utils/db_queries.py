@@ -1,3 +1,19 @@
+from sqlalchemy import Table, Column, Integer, String, MetaData,Float
+from sqlalchemy.sql.sqltypes import Time
+meta = MetaData()
+
+coin_data = Table(
+   'token_data', meta, 
+   Column('id', Integer, primary_key = True), 
+   Column('symbol', String), 
+   Column('timestamp', Time),
+   Column('open', Float), 
+   Column('close', Float),
+   Column('high', Float),
+   Column('low')
+)
+
+
 create_coin_list_table = """ CREATE TABLE IF NOT EXISTS coins(
                                         _id text PRIMARY KEY,
                                         coin_name text NOT NULL,
@@ -28,7 +44,13 @@ add_new_coin = ''' INSERT INTO coins(_id,coin_name, exchange, date_added) VALUES
 coin_exists = """SELECT EXISTS(
                     SELECT 1 
                     FROM coins 
-                    WHERE _id=?);"""
+                    WHERE coin_base=?);"""
+
+last_fetched = """SELECT last_fetch_at 
+                    FROM coin_data 
+                    WHERE coin_base = ?);"""
+
+get_coin_data = """select * from coin_data where coin_name = ? order by last_fetch_at desc limit ?; """
 
 add_coin_data = """INSERT INTO coin_data (
                     coin_base,

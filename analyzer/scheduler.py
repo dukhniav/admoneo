@@ -1,10 +1,10 @@
 import datetime
-import logging
+from logging import getLogger
 from traceback import format_exc
 
 from schedule import Job, Scheduler
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class SafeScheduler(Scheduler):
@@ -17,7 +17,6 @@ class SafeScheduler(Scheduler):
     """
 
     def __init__(self, rerun_immediately=True):
-        logger.info("Initializing Scheduler...")
         self.rerun_immediately = rerun_immediately
         super().__init__()
 

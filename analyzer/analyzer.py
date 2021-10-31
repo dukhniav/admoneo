@@ -1,124 +1,67 @@
 #!python3
-import time
-import logging
-import sys
 
-from typing import Any, List
-from os import getpid
-
-from analyzer import __version__, __name__
-from analyzer import processor
-from .config import Config
-from .database import Database
-from .scheduler import SafeScheduler
-from analyzer.utils.exceptions import AnalyzerException, OperationalException
-from analyzer.loggers import setup_logging_pre
-from analyzer import loggers
+from numpy import reciprocal
+from analyzer.config.config import Config
+from analyzer.database import Database
 from analyzer.processor import Processor
-from analyzer.loader import Loader
-from analyzer.communications.telegram_bot import TelegramBot
-from analyzer.communications import utils
-from analyzer.utils.enums.state import State
+from analyzer.scheduler import SafeScheduler
+# from .notifications import Notifications
+from analyzer.notifications import Telegram
+from analyzer.utils_rpc.rpc import RPCHandler, RPC
+from analyzer.utils_rpc.rpc_manager import RPCManager
 
-logger = logging.getLogger(__name__)
+from .enums.state import State
 
+from logging import getLogger
 
-def main():
-    """
-    This function will initiate the bot and start the  loop.
-    :return: None
-    """
-
-    return_code: Any = 1
-
-    try:
-        logger.info("Starting bot...")
-
-        config = Config()
-        setup_logging_pre()
-        loggers.setup_logging(config)
-
-        # Set initial bot state from config
-        initial_state = config.INITIAL_STATE
-        state = State[initial_state.upper(
-        )] if initial_state else State.STOPPED
-
-        loader = Loader(config)
-
-        t_gram = TelegramBot(config)
-
-        # Comms
-        if config.TGRAM_TOKEN is None or config.TGRAM_CHAT_ID is None:
-            utils.setup_telegram_constants()
-        _heartbeat_interval = config.HEARTBEAT_INTERVAL
-        _heartbeat_msg = 0
-
-        db = Database(t_gram, loader, config)
-
-        processor = Processor(loader, db, config)
-
-        # comms = TelegramBot(config)
-
-        # # APIs
-        # binance = BinanceAPIManager(config, db)
-        # if binance.enabled:
-        #     logger.info("Binance API enabled...")
-        #     config.BINANCE_ENABLED = True
-
-        # manager = BinanceAPIManager(config, db, logger)
-        # strategy = get_strategy(config.STRATEGY)
-        # if strategy is None:
-        #     logger.error("Invalid strategy name")
-        #     return
-
-        # trader = strategy(manager, db, logger, config)
-        # logger.info(f"Strategy selected: {config.STRATEGY}")
-
-        # logger.info("Setting approved coin list...")
-        # # db.set_coins(config.SUPPORTED_COIN_LIST)
-        # db.migrate_old_state()
-
-        schedule = SafeScheduler()
-
-        # schedule.every(60).seconds.do(processor.check_new_coins).tag("checking coins")
-        # processor.check_new_coins()
-        coin_list = processor.load_coin_list()
-        processor.update_coin_data_from_list(coin_list)
+logger = getLogger(__name__)
 
 
-        # schedule.every(1).minutes.do(trader.update_values).tag("updating value history")
-        # schedule.every(1).minutes.do(db.prune_scout_history).tag("pruning scout history")
-        # schedule.every(1).hours.do(db.prune_value_history).tag("pruning value history")
+class Analyzer:
+    def __init__(self, config: Config):
+        self.config = config
+        self.initial_state = config.INITIAL_STATE
+        self.state=State[self.initial_state.upper()]
+        if self.state != self.state.RUNNING:
+            self.state=State.STOPPED
+            logger.info("Bot is stopped, start from telegram")
+            # self.chatbot.("Bot is stopped, use /start")
+        logger.info("Initializing Analyzer...")
+        
+        self.__init_schedule()
+        self.__init_db()
+        self.__init_rpc()
+        self.__init_notifications()
+        self.__init_processor()
 
-        while state == State.RUNNING:
-            if _heartbeat_interval:
-                now = time.time()
-                if (now - _heartbeat_msg) > _heartbeat_interval:
-                    logger.info(f"Bot heartbeat. PID={getpid()}, "
-                                f"version='{__version__}', state='{state.name}'")
-                    _heartbeat_msg = now
-            schedule.run_pending()
-            time.sleep(config.BOT_SLEEP_TIME)
+    def __init_rpc(self):
+        logger.info("Initializing RPC Handler")
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPC = RPC(self)
 
-    except SystemExit as e:  # pragma: no cover
-        return_code = e
-    except KeyboardInterrupt:
-        logger.info('SIGINT received, aborting ...')
-        return_code = 0
-    except AnalyzerException as e:
-        logger.error(str(e))
-        return_code = 2
-    except Exception:
-        logger.exception('Fatal exception!')
-    finally:
-        sys.exit(return_code)
+    def __init_db(self):
+        logger.info("Initializing database...")
+        self.db = Database(self.config)
 
+    def __init_notifications(self):
+        logger.info("Initialing chatbot...")
+        self.chatbot = Telegram(self.rpc, self.config)
 
-def heart_beat(_heartbeat_msg, _heartbeat_interval, state):
-    if _heartbeat_interval:
-        now = time.time()
-        if (now - _heartbeat_msg) > _heartbeat_interval:
-            logger.info(f"Bot heartbeat. PID={getpid()}, "
-                        f"version='{__version__}', state='{state.name}'")
-            _heartbeat_msg = now
-    return _heartbeat_msg
+    def __init_processor(self):
+        logger.info("Initializing processor...")
+        self.processor=Processor(self.config, self.db, self.chatbot)
+
+    def __init_schedule(self):
+        logger.info("Initializing scheduler...")
+        self.schedule=SafeScheduler()
+
+    def send_update(self, msg):
+        logger.warning("update not implemented")
+        # self.chatbot.send_notification(msg)
+
+    def prune_logs(self):
+        logger.info("Purge logs")
