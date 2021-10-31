@@ -10,3 +10,7 @@ __pycache__
 analyzer/pycoingecko
 .DS_Store
 .history
+old_*
+/old_*
+/.vscode
+/.pytest_cache

@@ -1,136 +1,121 @@
-import json
+from datetime import datetime
+from logging import getLogger
+from .enums.tables import Table
+from .config.config import Config
+from .models import *  # pylint: disable=wildcard-import
+import pandas as pd
 
-from pymongo import MongoClient
-from pymongo import errors
-from pprint import pprint
-from urllib import parse
+from sqlalchemy import *
 
-from .configuration.configuration import Config
-from .models.coin import Coin
-from .logger import Logger
-from .loader import Loader
+logger = getLogger(__name__)
 
 
-class Database():
-    def __init__(self, logger: Logger, config: Config, loader: Loader):
-        self.logger = logger
+class Database:
+    def __init__(self,  config: Config):
         self.config = config
-        self.loader = loader
-        self.client = MongoClient('127.0.0.1', 27017)
-        self.logger.debug("Starting database...")
+        self.create_db()
 
+    def create_db(self):
+        logger.info("Attempting to create db")
+        self.engine = create_engine('sqlite:///' + self.config.DB_PATH, echo=False)
+        self.meta = MetaData(self.engine)    
+        self.create_tables()
 
-        # Uncomment below to use Mongo Atlas db
-        # self.client = MongoClient(config.MONGO_URL)
-        self.db = self.client.analyzerdb
+    def add_coin_data(self, df: pd.DataFrame):
+        df.to_sql(name = 'token_data', con = self.engine, if_exists = 'append', index=False)
 
-    def add_tweet_sentiment(self, coin_base, coin_name, sentiment, timestamp):
-        try:
-            self.db.validate_collection("sentiment")
-        except errors.OperationFailure:
-            self.logger.info("Creating collection 'Sentiment'")
-            self.db.create_collection("sentiment")
-        coin_collection = self.db.get_collection("sentmient")
-        coin_collection.insert_one(
-            {
-                "_id": coin_base,
-                "coin_name": coin_name,
-                "sentiment": sentiment,
-                "last_updated": timestamp
-            }
+    # def last_fetched(self, _id):
+    #     last_fetched = None
+    #     try:
+    #         cur = self.conn.cursor()
+    #         last_fetched = cur.execute(db_queries.last_fetched, (_id,))
+    #     except Error as e:
+    #         print(e)
+    #     return last_fetched
+
+    # def get_coin_data(self, coin_name, rows):
+    #     cur = self.conn.cursor()
+    #     data = cur.execute(db_queries.get_coin_data,
+    #                        (coin_name, rows,)).fetchall()
+    #     print(data)
+    #     return data
+
+    # def check_table_exists(self, table_name):
+    #     """
+    #     Check if a given table already exists.
+    #     Only used in startup or when db gets deleted
+    #     :param: table name
+    #     :return: boolean if table exists
+    #     """
+    #     table_exists = True
+    #     try:
+    #         cur = self.conn.cursor()
+    #         cur.execute(db_queries.check_table, (table_name,))
+    #     except Error as e:
+    #         print(e)
+    #     if cur.fetchone()[0] == 0:
+    #         table_exists = False
+    #     return table_exists
+
+    def create_tables(self):
+        """ create a table from the create_table_sql statement
+        :param conn: Connection object
+        :param create_table_sql: a CREATE TABLE statement
+        :return:
+        """
+        self.token_data = Table(
+            'token_data', self.meta, 
+            Column('id', Integer, primary_key = True), 
+            Column('symbol', String), 
+            Column('timestamp', Time),
+            Column('open', Float), 
+            Column('close', Float),
+            Column('high', Float),
+            Column('low', Float)
         )
+        self.token_data.create(checkfirst=True)
 
-    def add_new_coin(self, coin_base, coin_name):
-        try:
-            # Try to validate a collection
-            self.db.validate_collection("coin_list")
-        except errors.OperationFailure:  # If the collection doesn't exist
-            self.logger.info("Creating cllection 'Coin List'")
-            self.db.create_collection("coin_list")
+        
 
-        coin_collection = self.db.get_collection("coin_list")
-        coin_collection.insert_one(
-            {
-                "_id": coin_base,
-                "coin_name": coin_name
-            }
-        )
+    # def add_new_coin(self, _id, name):
+    #     """
+    #     Create a new project into the projects table
+    #     :param conn:
+    #     :param _id:
+    #     :param name:
+    #     :return: project id
+    #     """
+    #     cur = self.conn.cursor()
+    #     cur.execute(db_queries.add_new_coin, (_id, name,
+    #                 self.config.EXCHANGE, datetime.now(),))
+    #     self.conn.commit()
+    #     return cur.lastrowid
 
-    def add_coin(self, coin: Coin):
-        try:
-            # Try to validate a collection
-            self.db.validate_collection("coin_info")
-        except errors.OperationFailure:  # If the collection doesn't exist
-            self.logger.info("Creating cllection 'Coin Info'")
-            self.db.create_collection("coin_info")
+    # def check_coin_exists(self, _id) -> bool:
+    #     """
+    #     Checks if a coin exists
+    #     """
+    #     coin_exists = True
+    #     cur = self.conn.cursor()
+    #     cur.execute(db_queries.coin_exists, (_id,))
+    #     if cur.fetchone()[0] == 0:
+    #         coin_exists = False
+    #     return coin_exists
 
-        coin_collection = self.db.get_collection("coin_info")
-        coin_collection.insert_one(
-            {"_id": coin.coin_base,
-                "coin_name": coin.coin_name,
-                "coin_symbol": coin.coin_symbol,
-                "coin_last": coin.coin_last,
-                "coin_volume": coin.coin_volume,
-                "bid_ask_spread_percentage": coin.bid_ask_spread_percentage,
-                "target_coin_name": coin.target_coin_name,
-                "last_fetch_at": coin.last_fetch_at,
-                "coin_trust": coin.coin_trust,
-                "coin_anomaly": coin.coin_anomaly,
-                "coin_stale": coin.coin_stale,
-                "enabled": coin.enabled
-             }
-        )
+    # def get_coin_list(self):
+    #     """
+    #     Fetch list of coins to be worked on
+    #     """
+    #     cur = self.conn.cursor()
+    #     coin_list = cur.execute(db_queries.get_coin_list).fetchall()
+    #     return coin_list
 
-    def coin_exists(self, coin_base):
-        coin_collection = self.db.get_collection("coin_list")
-        # self.logger.info("Checking coin: ", coin_base)
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
-
-        status = True
-        if coin is None:
-            status = False
-
-        return status
-
-    def coin_info_exists(self, coin_base):
-        coin_collection = self.db.get_collection("coin_info")
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
-
-        status = True
-        if coin is None:
-            status = False
-
-        return status
-
-    def update_coin(self, coin: Coin):
-        coin_collection = self.db.get_collection("coin_info")
-        coin_collection.update_one({"_id": coin.coin_base},
-                                   {"$set": {
-                                       "coin_last": coin.coin_last,
-                                       "coin_volume": coin.coin_volume,
-                                       "bid_ask_spread_percentage": coin.bid_ask_spread_percentage,
-                                       "last_fetch_at": coin.last_fetch_at,
-                                       "coin_trust": coin.coin_trust,
-                                       "coin_anomaly": coin.coin_anomaly,
-                                       "coin_stale": coin.coin_stale,
-                                   }
-        }, upsert=True)
-
-        # db.collection.update_one({"_id":"key1"}, {"$set": {"id":"key1"}}, upsert=True)
-
-    def get_coin_name(self, coin_base):
-        coin_collection = self.db.get_collection("coins")
-        coin = coin_collection.find_one(
-            {"_id": coin_base}, {"_id": 1})
-
-        coin_name = None
-        if coin is not None:
-            coin_name = coin.coin_name
-
-        return coin_name
-
-    def get_all_coins(self):
-        db = self.db.get_collection("coin_list")
-        return list(db.find({}, {"coin_name": 1}))
+    # def add_coin_data(self, coin: Coin):
+    #     """
+    #     Add coin data
+    #     :param coin: Coin object with data to be pushed to db
+    #     :return: none
+    #     """
+    #     cur = self.conn.cursor()
+    #     cur.execute(db_queries.add_coin_data, coin.__info__())
+    #     self.conn.commit()

@@ -1,8 +1,10 @@
 import datetime
-from .logger import Logger
+from logging import getLogger
 from traceback import format_exc
 
 from schedule import Job, Scheduler
+
+logger = getLogger(__name__)
 
 
 class SafeScheduler(Scheduler):
@@ -14,18 +16,15 @@ class SafeScheduler(Scheduler):
     whether other jobs will run or if they'll crash the entire script.
     """
 
-    def __init__(self, logger: Logger, rerun_immediately=True):
-        self.logger = logger
+    def __init__(self, rerun_immediately=True):
         self.rerun_immediately = rerun_immediately
-        self.logger.debug("Starting Scheduler...")
-
         super().__init__()
 
     def _run_job(self, job: Job):
         try:
             super()._run_job(job)
         except Exception:  # pylint: disable=broad-except
-            self.logger.error(
+            logger.error(
                 f"Error while {next(iter(job.tags))}...\n{format_exc()}")
             job.last_run = datetime.datetime.now()
             if not self.rerun_immediately:

@@ -11,9 +11,30 @@ from typing import List, Tuple
 # Paths
 DEFAULT_CONFIG_PATH = "./config/config.cfg"
 CONFIG_SECTION = "configuration_data"
+DB_PATH = "./data/analyzer_db.db"
+COINLIST_PATH = "./config/coins.txt"
+LOGFILE_PATH = "./logs/analyzer_logfile.log"
 
 # System
-PROCESS_THROTTLE_SECS = 5  # sec
+DATETIME_PRINT_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+# Notifications
+DEFAULT_STATUS = "on"
+DEFAULT_WARNING = "on"
+DEFAULT_STARTUP = "off"
+
+# Intervals
+PROCESS_THROTTLE_SECS = 120  # sec
+UPDATE_COINS = 500  # sec - 5 min
+MEDIUM_THROTTLE_SEC = 3600  # 60 min
+CHECK_COINS = 43200  # 12 hr
+HEARTBEAT_INTERVAL = 60  # sec
+NOTIFY_HEARTBEAT_INTERVAL = 300  # sec
+RETRY_TIMEOUT = 30  # sec
+VERBOSITY_SIMPLE = 0
+VERBOSITY_DEBUG = 1
+LOG_LIFE = 3 # days
 
 # Fiat
 SUPPORTED_FIAT = [

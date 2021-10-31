@@ -1,34 +1,36 @@
 #!python3
-from datetime import datetime
-
-from pycoingecko import CoinGeckoAPI as cg
+from pycoingecko import CoinGeckoAPI
 from pycoingecko.api import CoinGeckoAPI
+from logging import getLogger
 
-from .logger import Logger
-from analyzer.configuration.configuration import Config
-from .models.coin import Coin
+from .config.config import Config
 
+logger = getLogger(__name__)
 
 class Loader:
-    def __init__(self, logger: Logger, config: Config,  coingecko: CoinGeckoAPI):
+    def __init__(self, config: Config):
+        self.cg = CoinGeckoAPI()
         self.config = config
-        self.logger = logger
-        self.cg = coingecko
-        self.logger.debug("Starting loader...")
+    
+    def initialize(self):
+        super()
 
     def get_coins(self):
-        self.logger.info("Getting coin values")
         coins = self.cg.get_exchanges_tickers_by_id(self.config.EXCHANGE)
+        print(self.cg.get_coins_list())
+
         return coins
 
+    def get_cg_exchanges(self):
+        return self.cg.get_exchanges_list()
+
     def get_coin_list(self):
-        self.logger.info("Getting available coins from " +
-                         self.config.EXCHANGE)
+        logger.info("Getting available coins from " +
+                    self.config.EXCHANGE)
         coins = self.cg.get_exchanges_tickers_by_id(self.config.EXCHANGE)
         return coins
 
     def get_coin_info(self, coin_name):
-        self.logger.debug("Getting info for: "+coin_name)
         coin_data = self.cg.get_coin_by_id(coin_name)
         return coin_data
 
