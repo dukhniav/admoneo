@@ -14,3 +14,8 @@ old_*
 /old_*
 /.vscode
 /.pytest_cache
+/.env
+/admoneo.egg-info
+admoneo/
+/env
+/build

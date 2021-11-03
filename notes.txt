@@ -1,0 +1,20 @@
+1. Functionality
+    1. Automatic
+        1. Coin info
+            1. Get coin data
+            2. Process coin data
+            3. Run data through indicators
+            4. If indicators suggest, notify user 
+        2. Twitter
+        3. News
+        4. Web scraping?
+    2. Manual
+    3. Remote
+        1. Coin info
+            1. Looking up individual coin -> basic info
+            2. Looking up individual coin -> performance
+            3. View wallet balances 
+            4. View overall market data?
+        2. Market info
+        3. 
+

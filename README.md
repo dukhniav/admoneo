@@ -1,4 +1,4 @@
-# analyzer
+# Admoneo
 
 Python script to continuously analyze crypto data.
 
@@ -9,7 +9,7 @@ Python script to continuously analyze crypto data.
    2. [Create user configuration](#Create-user-configuration)
       1. [Environment Variables](#Environment-Variables)
       2. [MongoDB Atlas](#MongoDB-Atlas)
-   3. [Run analyzer](#Run)
+   3. [Run admoneo](#Run)
 2. [Background](#Background)
 3. [Open to-dos](#future-to-dos)
 
@@ -48,21 +48,21 @@ Create a .cfg file named `user.cfg` based off `.user.cfg.example`
 #### MongoDB Atlas
 
 3.  Register for a [Mongo Atlas](https://www.mongodb.com/cloud/atlas/register) account and create a free (or paid) cluster
-4.  Verify your version of Python is correct by clicking on "Connect > Connect your application" 5. If not, update `self.MONGO_URL` in `/analyzer/conf/config.py` with correct URL
+4.  Verify your version of Python is correct by clicking on "Connect > Connect your application" 5. If not, update `self.MONGO_URL` in `/admoneo/conf/config.py` with correct URL
 5.  Copy username and password to user.cfg:
     ```
     mongo_user=
     mongo_pw=
     ```
-6.  Comment out line 19 in `/analyzer/database.py`
+6.  Comment out line 19 in `/admoneo/database.py`
     `19: self.client = MongoClient('127.0.0.1', 27017)`
-7.  Uncomment line 22 in `/analyzer/database.py`:
+7.  Uncomment line 22 in `/admoneo/database.py`:
     `21: self.client = MongoClient(config.MONGO_URL)`
 
 ### Run
 
 ```shell
-python -m analyzer
+python -m admoneo
 ```
 
 ## Background
