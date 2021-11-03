@@ -3,6 +3,8 @@
 """
 This module manage Telegram communication
 """
+import enum
+import itertools
 import json
 import logging
 import re
@@ -14,21 +16,19 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
-                      ParseMode, ReplyKeyboardMarkup, Update)
+from telegram import (CallbackQuery, InlineKeyboardButton,
+                      InlineKeyboardMarkup, KeyboardButton, ParseMode,
+                      ReplyKeyboardMarkup, Update)
 from telegram.error import BadRequest, NetworkError, TelegramError
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
+from telegram.ext import (CallbackContext, CallbackQueryHandler,
+                          CommandHandler, Updater)
 from telegram.utils.helpers import escape_markdown
 
 from analyzer.__init__ import __version__
-from analyzer.utils.exceptions import OperationalException
-from analyzer.utils_rpc.rpc import RPC, RPCHandler, RPCException
-
-from analyzer.enums.comms_msg_type import CommsMsgType
 from analyzer.config.config import Config
-
-
-
+from analyzer.enums.comms_msg_type import CommsMsgType
+from analyzer.utils.exceptions import OperationalException
+from analyzer.utils_rpc.rpc import RPC, RPCException, RPCHandler
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +97,10 @@ class Telegram(RPCHandler):
         section.
         """
         self._keyboard: List[List[Union[str, KeyboardButton]]] = [
+            ['/info','/coins'],
             ['/daily', '/profit', '/balance'],
-            ['/status', '/status table', '/performance'],
-            ['/count', '/start', '/stop', '/help']
+            # ['/status', '/status table', '/performance'],
+            ['/start', '/stop', '/help']
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # like /forcesell and /forcebuy
@@ -112,6 +113,7 @@ class Telegram(RPCHandler):
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/info', r'/coins',
                                  r'/forcebuy$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
@@ -144,6 +146,7 @@ class Telegram(RPCHandler):
 
         # Register command handler and start telegram message polling
         handles = [
+            CommandHandler('coins', self._show_coin_list),
             CommandHandler('status', self._status),
             CommandHandler('profit', self._profit),
             CommandHandler('balance', self._balance),
@@ -744,7 +747,6 @@ class Telegram(RPCHandler):
         self._send_msg("Not implemented")
         logger.warning("Stop buy button not implemented")
 
-
     @authorized_only
     def _forcesell(self, update: Update, context: CallbackContext) -> None:
         """
@@ -768,7 +770,6 @@ class Telegram(RPCHandler):
         #     self._send_msg(str(e))
         self._send_msg("Not implemented")
         logger.warning("Force sell button not implemented")
-
 
     # def _forcebuy_action(self, pair, price=None):
     #     try:
@@ -930,7 +931,6 @@ class Telegram(RPCHandler):
         self._send_msg("Not implemented")
         logger.warning("Count button not implemented")
 
-
     @authorized_only
     def _locks(self, update: Update, context: CallbackContext) -> None:
         """
@@ -976,7 +976,6 @@ class Telegram(RPCHandler):
         self._send_msg("Not implemented")
         logger.warning("Delete locks button not implemented")
 
-
     @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
         """
@@ -995,7 +994,6 @@ class Telegram(RPCHandler):
         #     self._send_msg(str(e))
         self._send_msg("Not implemented")
         logger.warning("Whitelist button not implemented")
-
 
     @authorized_only
     def _blacklist(self, update: Update, context: CallbackContext) -> None:
@@ -1022,7 +1020,6 @@ class Telegram(RPCHandler):
         #     self._send_msg(str(e))
         self._send_msg("Not implemented")
         logger.warning("Blacklist button not implemented")
-
 
     @authorized_only
     def _logs(self, update: Update, context: CallbackContext) -> None:
@@ -1083,8 +1080,6 @@ class Telegram(RPCHandler):
         self._send_msg("Not implemented")
         logger.warning("Edge button not implemented")
 
-
-
     @authorized_only
     def _help(self, update: Update, context: CallbackContext) -> None:
         """
@@ -1102,17 +1097,12 @@ class Telegram(RPCHandler):
                    "         *table :* `will display trades in a table`\n"
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
-                   "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
                    "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
                    "over the last n days`\n"
-                   "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
-                   "regardless of profit`\n"
-                   "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
                    "*/performance:* `Show performance of each finished trade grouped by pair`\n"
                    "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
                    "*/stats:* `Shows Wins / losses by Sell reason as well as "
                    "Avg. holding durationsfor buys and sells.`\n"
-                   "*/count:* `Show number of active trades compared to allowed number of trades`\n"
                    "*/locks:* `Show currently locked pairs`\n"
                    "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
                    "*/balance:* `Show account balance per currency`\n"
@@ -1120,10 +1110,6 @@ class Telegram(RPCHandler):
                    "*/reload_config:* `Reload configuration file` \n"
                    "*/show_config:* `Show running configuration` \n"
                    "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
-                   "*/whitelist:* `Show current whitelist` \n"
-                   "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
-                   "to the blacklist.` \n"
-                   "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
                    "*/help:* `This help message`\n"
                    "*/version:* `Show version`")
 
@@ -1139,6 +1125,25 @@ class Telegram(RPCHandler):
         :return: None
         """
         self._send_msg('*Version:* `{}`'.format(__version__))
+
+    @authorized_only
+    def _show_coin_list(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /show_coins.
+        Show current list of coins being watched
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        coin_list = RPC._rpc_show_coin_list(self._rpc._analyzer.coin_list)
+
+        msgs = "*Coins*: \n"
+        for i, coin in enumerate(coin_list['coin_list']):
+            # Append message to messages to send
+            msg = self._config.escape_char(coin)
+            msgs += '  ' + str(i) + '\. ' + msg + '\n'
+        if msgs:
+            self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:

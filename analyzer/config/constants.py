@@ -11,7 +11,8 @@ from typing import List, Tuple
 # Paths
 DEFAULT_CONFIG_PATH = "./config/config.cfg"
 CONFIG_SECTION = "configuration_data"
-DB_PATH = "./data/analyzer_db.db"
+DB_PATH = "./data"
+DB_NAME = "analyzer_db.db"
 COINLIST_PATH = "./config/coins.txt"
 LOGFILE_PATH = "./logs/analyzer_logfile.log"
 

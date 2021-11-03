@@ -1,4 +1,6 @@
-# Config consts
+"""
+Configuration class to handle most of default, constant and variable user data.
+"""
 import configparser
 import os
 
@@ -11,6 +13,7 @@ CREDENTIALS_NAME = "./config/credentials.cfg"
 CREDENTIALS_SECTION = "credentials_data"
 APPRISE_PATH = "./config/apprise.yml"
 NOTIFICATIONS_ROOT = "./notifications/"
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -31,7 +34,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
 
         if not os.path.exists(CONFIG_NAME):
             print(
-                "No configuration file (user.cfg) found! See README. Assuming default config...")
+                "No configuration file (user.cfg) found! See README. Assuming default config..."
+            )
             config[CONFIG_SECTION] = {}
         else:
             config.read(CONFIG_NAME)
@@ -39,24 +43,26 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         # Credentials config
         if not os.path.exists(CREDENTIALS_NAME):
             print(
-                "No configuration file (user.cfg) found! See README. Assuming default config...")
+                "No configuration file (user.cfg) found! See README. Assuming default config..."
+            )
             cred_config[CREDENTIALS_SECTION] = {}
         else:
             cred_config.read(CREDENTIALS_NAME)
 
         # Secrets
-        self.TGRAM_TOKEN = cred_config.get(
-            CREDENTIALS_SECTION, "telegram_token")
-        self.TGRAM_CHAT_ID = cred_config.get(
-            CREDENTIALS_SECTION, "telegram_chat_id")
+        self.TGRAM_TOKEN = cred_config.get(CREDENTIALS_SECTION, "telegram_token")
+        self.TGRAM_CHAT_ID = cred_config.get(CREDENTIALS_SECTION, "telegram_chat_id")
         self.BINANCE_API_KEY = os.environ.get("API_KEY") or cred_config.get(
-            CREDENTIALS_SECTION, "binance_api_key")
-        self.BINANCE_API_SECRET_KEY = os.environ.get("API_SECRET_KEY") or cred_config.get(
-            CREDENTIALS_SECTION, "binance_api_secret_key")
+            CREDENTIALS_SECTION, "binance_api_key"
+        )
+        self.BINANCE_API_SECRET_KEY = os.environ.get(
+            "API_SECRET_KEY"
+        ) or cred_config.get(CREDENTIALS_SECTION, "binance_api_secret_key")
 
         # Paths
         self.LOGFILE_PATH = constants.LOGFILE_PATH
         self.DB_PATH = constants.DB_PATH
+        self.DB_NAME = constants.DB_NAME
         self.COINS_PATH = constants.COINLIST_PATH
         self.TGRAM_URL = "https://api.telegram.org/bot"
         self.APPRISE_PATH = APPRISE_PATH
@@ -66,34 +72,40 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.TGRAM_UPDATE_BROADCASTED_BEFORE = False
         self.NOTI_UPDATE_BROADCASTED_BEFORE = False
         self.TGRAM_KEYBOARD = None
-        self.TGRAM_STATUS = config.get(NOTI_SECTION, "status") or constants.DEFAULT_STATUS
-        self.TGRAM_WARNING = config.get(NOTI_SECTION, "warning") or constants.DEFAULT_WARNING
-        self.TGRAM_STARTUP = config.get(NOTI_SECTION, "startup") or constants.DEFAULT_STARTUP
+        self.TGRAM_STATUS = (
+            config.get(NOTI_SECTION, "status") or constants.DEFAULT_STATUS
+        )
+        self.TGRAM_WARNING = (
+            config.get(NOTI_SECTION, "warning") or constants.DEFAULT_WARNING
+        )
+        self.TGRAM_STARTUP = (
+            config.get(NOTI_SECTION, "startup") or constants.DEFAULT_STARTUP
+        )
 
         self.TGRAM_NOTI = "on"
-        if self.TGRAM_STATUS == "off" and self.TGRAM_WARNING == "off" and self.TGRAM_WARNING == "off":
+        if (
+            self.TGRAM_STATUS == "off"
+            and self.TGRAM_WARNING == "off"
+            and self.TGRAM_WARNING == "off"
+        ):
             self.TGRAM_NOTI = "off"
 
         # APIs
         self.BINANCE_ENABLED = False
-        self.TGRAM_ENABLED = False
+        self.TGRAM_ENABLED = True
 
-
-        self.BINANCE_TLD = os.environ.get(
-            "TLD") or config.get(CONFIG_SECTION, "tld")
+        self.BINANCE_TLD = os.environ.get("TLD") or config.get(CONFIG_SECTION, "tld")
 
         # Prune settings
         self.SCOUT_HISTORY_PRUNE_TIME = float(
-            os.environ.get("") or config.get(
-                CONFIG_SECTION, "hourToKeepScoutHistory")
+            os.environ.get("") or config.get(CONFIG_SECTION, "hourToKeepScoutHistory")
         )
 
         # Get config for scout
         self.SCOUT_MULTIPLIER = float(
-            os.environ.get("SCOUT_MULTIPLIER") or config.get(
-                CONFIG_SECTION, "scout_multiplier")
+            os.environ.get("SCOUT_MULTIPLIER")
+            or config.get(CONFIG_SECTION, "scout_multiplier")
         )
-        
 
         # # Get supported coin list from the environment
         # supported_coin_list = [
@@ -124,15 +136,27 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.VERBOSITY_DEBUG = constants.VERBOSITY_DEBUG
         self.INITIAL_STATE = config.get(CONFIG_SECTION, "initial_state")
         self.EXCHANGE = config.get(CONFIG_SECTION, "exchange")
+        self.CLEANUP_ENABLED = config.get(CONFIG_SECTION, "purge_cache") or False
+        self.CLEANUP_DIRS = ["__pycache__", ".pytest_cache"]
+        self.CLEANUP_FILE_EXTENSIONS = []
 
         # Time
         self.HEARTBEAT_INTERVAL = constants.HEARTBEAT_INTERVAL
         self.NOTIFY_HEARTBEAT_INTERVAL = constants.NOTIFY_HEARTBEAT_INTERVAL
-        self.BOT_SLEEP_TIME = int(config.get(
-            constants.CONFIG_SECTION, "bot_sleep_time"))
+        self.BOT_SLEEP_TIME = int(
+            config.get(constants.CONFIG_SECTION, "bot_sleep_time")
+        )
         self.CHECK_COINS_INTERVAL = int(constants.CHECK_COINS)
         self.UPDATE_COINS_INTERVAL = int(constants.UPDATE_COINS)
         self.LOG_LIFESPAN = int(
             config.get(CONFIG_SECTION, "log_lifespan") or constants.LOG_LIFE
         )
-    
+
+    def escape_char(self, txt: str) -> str:
+        """
+        Used mainly for telegram messages
+        """
+        chars = "\\.-_"
+        for c in chars:
+            txt = txt.replace(c, "\\" + c)
+        return txt

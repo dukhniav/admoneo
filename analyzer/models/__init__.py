@@ -1,2 +1,3 @@
-from analyzer.models.coin import Coin
-from analyzer.models import signals, base
+from analyzer.models import coin
+
+# from analyzer.models import signals, base

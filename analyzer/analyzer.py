@@ -1,4 +1,6 @@
-#!python3
+"""
+Analyzer bot
+"""
 
 from numpy import reciprocal
 from analyzer.config.config import Config
@@ -9,6 +11,7 @@ from analyzer.scheduler import SafeScheduler
 from analyzer.notifications import Telegram
 from analyzer.utils_rpc.rpc import RPCHandler, RPC
 from analyzer.utils_rpc.rpc_manager import RPCManager
+from analyzer.enums import CommsMsgType
 
 from .enums.state import State
 
@@ -19,20 +22,37 @@ logger = getLogger(__name__)
 
 class Analyzer:
     def __init__(self, config: Config):
+        logger.info("Initializing Analyzer...")
+
         self.config = config
         self.initial_state = config.INITIAL_STATE
         self.state=State[self.initial_state.upper()]
-        if self.state != self.state.RUNNING:
-            self.state=State.STOPPED
-            logger.info("Bot is stopped, start from telegram")
-            # self.chatbot.("Bot is stopped, use /start")
-        logger.info("Initializing Analyzer...")
-        
+
+        logger.info(f"Bot state is: {self.state}")
+        if self.state == State.STOPPED:
+            logger.warning("Bot has been stopped")
+
+
+        # Initialize modules
         self.__init_schedule()
         self.__init_db()
         self.__init_rpc()
-        self.__init_notifications()
+        if self.config.TGRAM_ENABLED:
+            self.__init_notifications()
         self.__init_processor()
+
+        if self.state != self.state.RUNNING:
+            self.state=State.STOPPED
+            logger.info("Bot is stopped, start from telegram")
+            self.chatbot.send_msg("Bot is stopped, use /start")
+
+        if self.config.TGRAM_NOTI == 'on':
+            self.chatbot.send_msg({
+            'type': CommsMsgType.STATUS,
+            'status': "Initializing bot..."
+        })
+
+        self.coin_list = self.processor.coin_list
 
     def __init_rpc(self):
         logger.info("Initializing RPC Handler")
