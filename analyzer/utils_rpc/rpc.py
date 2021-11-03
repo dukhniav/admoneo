@@ -6,18 +6,12 @@ from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
-from analyzer.enums import State
-
-
-from analyzer.config.config import Config
-from analyzer.config import constants
 
 import arrow
 import psutil
-from numpy import NAN, inf, int64, mean
-
-from pandas import DataFrame
-
+from analyzer.config import constants
+from analyzer.config.config import Config
+from analyzer.enums import State
 # from analyzer.configuration.timerange import TimeRange
 # from analyzer.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 # from analyzer.data.history import load_data
@@ -25,6 +19,9 @@ from pandas import DataFrame
 # from analyzer.exceptions import ExchangeError, PricingError
 # from analyzer.exchange import timeframe_to_minutes, timeframe_to_msecs
 from analyzer.loggers import bufferHandler
+from numpy import NAN, inf, int64, mean
+from pandas import DataFrame
+
 # from analyzer.misc import decimals_per_coin, shorten_date
 # from analyzer.persistence import PairLocks, Trade
 # from analyzer.persistence.models import PairLock
@@ -94,7 +91,20 @@ class RPC:
         :return: None
         """
         self._analyzer = analyzer
+        self._db = analyzer.db
         self._config: Config = analyzer.config
+
+    @staticmethod
+    def _rpc_show_coin_list(coin_list: Union[List, str]) -> Dict[str, Any]:
+        """
+        Return a dict of config options.
+        Explicitly does NOT return the full config to avoid leakage of sensitive
+        information via rpc.
+        """
+        val = {
+            'coin_list': coin_list
+        }
+        return val
 
     @staticmethod
     def _rpc_show_config(config: Config, botstate: Union[State, str]) -> Dict[str, Any]:
@@ -508,8 +518,6 @@ class RPC:
 
     def _rpc_start(self) -> Dict[str, str]:
         """ Handler for start """
-        print("in _RPC_START")
-
         if self._analyzer.state == State.RUNNING:
             return {'status': 'already running'}
 

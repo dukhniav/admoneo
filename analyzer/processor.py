@@ -32,6 +32,7 @@ class Processor():
         self.api1 = "https://api.coingecko.com/api/v3/coins/"
         self.api2 = "/ohlc?vs_currency=usd&days=1"
         self.coin_list = self.load_coin_list()
+        self.db.add_coins(self.coin_list)
 
     def gen_signals(self, symbol):
         link = self.api1 + symbol + self.api2

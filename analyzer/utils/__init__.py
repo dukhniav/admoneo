@@ -1,4 +1,5 @@
-from analyzer.utils import db_queries, exceptions, repeatable_timer
+from analyzer.utils import exceptions, repeatable_timer
+
 # import logging
 # import sched
 # import time
